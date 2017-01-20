@@ -21,13 +21,22 @@ sub _process_cmdbundle_module {
     {
         my @pod;
 
-        push @pod, "This bundle provides the following lcpan subcommands:\n\n",
+        push @pod, "This bundle provides the following lcpan subcommands:\n\n";
+        push @pod, "=over\n\n";
+        for my $file (@{ $input->{zilla}->files }) {
+            my $name = $file->name;
+            next unless $name =~ m!^lib/App/lcpan/Cmd/([^/]+)\.pm$!;
+            my $subpkg = $1;
+            (my $subcmd = $1) =~ s/_/-/g;
+            push @pod, "=item * L<lcpan $subcmd|App::lcpan::Cmd::$subpkg>\n\n";
+        }
+        push @pod, "=back\n\n";
 
         $self->add_text_to_section(
             $document, join("", @pod), 'DESCRIPTION',
             {
                 after_section => ['SYNOPSIS'],
-                ignore => 1,
+                top => 1,
             });
     }
 
@@ -40,6 +49,22 @@ sub _process_cmd_module {
     my ($self, $document, $input, $package) = @_;
 
     my $filename = $input->{filename};
+
+    # Add Description section
+    {
+        my @pod;
+
+        (my $subcmd = $filename) =~ s!.+/!!; $subcmd =~ s/\.pm$//; $subcmd =~ s/_/-/g;
+
+        push @pod, "This module handles the L<lcpan> subcommand C<$subcmd>.\n\n";
+
+        $self->add_text_to_section(
+            $document, join("", @pod), 'DESCRIPTION',
+            {
+                after_section => ['SYNOPSIS'],
+                top => 1,
+            });
+    }
 
     $self->log(["Generated POD for '%s'", $filename]);
 }
@@ -87,11 +112,15 @@ For each C<lib/App/lcpan/CmdBundle/*> module files:
 
 =over
 
+=item * Add general Description text
+
 =back
 
 For each C<lib/App/lcpan/Cmd/*> module files:
 
 =over
+
+=item * Add general Description text
 
 =back
 
